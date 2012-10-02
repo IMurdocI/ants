@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -153,6 +154,8 @@ public class MyBot extends Bot
 
     private DecimalFormat df;
 
+    private Map<Tile, Ant> ants;
+
     /**
      * Constructor init basic things
      */
@@ -165,6 +168,7 @@ public class MyBot extends Bot
 	isMapFullyExplored = false;
 	turnTwoInited = false;
 
+	ants = new HashMap<Tile, Ant>();
 	targetsList = new LinkedList<HashMap<Tile, Tile>>();
 	foodTargets = new HashMap<Tile, Tile>();
 	hillTargets = new HashMap<Tile, Tile>();
@@ -192,7 +196,8 @@ public class MyBot extends Bot
 	    @Override
 	    public String format(LogRecord event)
 	    {
-		return "\nTurn " + currentTurn + ": " + event.getSourceMethodName() + ": " + event.getMessage()
+		return "\nTurn " + currentTurn + ": " + event.getSourceClassName() + "." + event.getSourceMethodName()
+			+ ": " + event.getMessage()
 			+ " remaining time: " + game.getTimeRemaining() + ", Free memory: "
 			+ df.format(Runtime.getRuntime().freeMemory());
 	    }
@@ -287,6 +292,34 @@ public class MyBot extends Bot
     }
 
     /**
+     * Calculates Distance between two tiles. Same as in <code>Ants()</code> but
+     * not squared.
+     * 
+     * @return distance (<code>rowDelta + colDelta</code>)
+     */
+    private int calculateDistance(Tile t1, Tile t2)
+    {
+	int rowDelta = Math.abs(t1.getRow() - t2.getRow());
+	int colDelta = Math.abs(t1.getCol() - t2.getCol());
+	rowDelta = Math.min(rowDelta, game.getRows() - rowDelta);
+	colDelta = Math.min(colDelta, game.getCols() - colDelta);
+
+	return rowDelta + colDelta;
+    }
+
+    private void calculateNewAnts()
+    {
+	for (Tile antPosition : game.getMyAnts())
+	{
+	    if (!ants.containsValue(antPosition))
+	    {
+		ants.put(antPosition, new Ant(antPosition, log));
+	    }
+	}
+
+    }
+
+    /**
      * Checks if move is valid for an ant
      * 
      * Prevent ants from moving onto other ants
@@ -325,6 +358,9 @@ public class MyBot extends Bot
 	if (game.getIlk(newLoc).isUnoccupied() && !orders.containsKey(newLoc))
 	{
 	    game.issueOrder(antLoc, direction);
+	    Ant ant = ants.get(antLoc);
+	    ants.remove(antLoc);
+	    ants.put(newLoc, ant);
 	    orders.put(newLoc, antLoc);
 	    myPerceivedAnts.add(newLoc);
 	    return true;
@@ -374,6 +410,9 @@ public class MyBot extends Bot
 
 	// update info about visible tiles
 	updateVisibleTiles();
+
+	// welcome new ants
+	calculateNewAnts();
 
 	// list casualties
 	calculateCasulties();
@@ -631,14 +670,13 @@ public class MyBot extends Bot
 	    }
 	}
     }
-
     private void findFood()
     {
 	// check if any food is visible
 	if (game.getFoodTiles().size() > 0)
 	{
 	    // find close food
-	    List<Route> foodRoutes = new ArrayList<Route>();
+	    List<Route> foodRoutes = new LinkedList<Route>();
 	    TreeSet<Tile> sortedFood = new TreeSet<Tile>(game.getFoodTiles());
 
 	    // find closest ant for every food
@@ -680,8 +718,9 @@ public class MyBot extends Bot
 	    Collections.sort(foodRoutes);
 
 	    // find way to food
-	    for (Route foodRoute : foodRoutes)
+	    for (ListIterator<Route> foodRouteIterator = foodRoutes.listIterator(); foodRouteIterator.hasNext();)
 	    {
+		Route foodRoute = foodRouteIterator.next();
 		Tile ant = foodRoute.getStart();
 		Tile food = foodRoute.getEnd();
 
@@ -708,18 +747,48 @@ public class MyBot extends Bot
 		    {
 			log.info("no direct path found from " + Util.tilePositionAsString(route.getStart()) + " to "
 				+ Util.tilePositionAsString(route.getEnd()) + ". Trying indirect path (A*)..");
-			route = new AStarRoute(game, ant, food, true, exploredTiles, log);
 
-			// indirect way found
-			if (route.findRoute())
+			if (foodRouteIterator.hasNext())
 			{
-			    calculatedRoutes.put(ant, route);
-			    foodTargets.put(ant, food);
-			    executeStoredRoute(ant, foodTargets, null);
+			    Route nextFoodRoute = foodRouteIterator.next();
+			    foodRouteIterator.previous();
+			    if (foodRoute.getDistance() * 3 < (nextFoodRoute.getDistance()))
+			    {
+				route = new AStarRoute(game, ant, food, true, exploredTiles, log);
+
+				// indirect way found
+				if (route.findRoute())
+				{
+				    calculatedRoutes.put(ant, route);
+				    foodTargets.put(ant, food);
+				    executeStoredRoute(ant, foodTargets, null);
+				}
+				// no indirect way found either
+				else
+				{
+				}
+			    }
+			    else
+			    {
+				log.info("avoiding indirect (A*) path, because there is a (probably) closer food at "
+					+ Util.tilePositionAsString(nextFoodRoute.getEnd()));
+			    }
 			}
-			// no indirect way found either
 			else
 			{
+			    route = new AStarRoute(game, ant, food, true, exploredTiles, log);
+
+			    // indirect way found
+			    if (route.findRoute())
+			    {
+				calculatedRoutes.put(ant, route);
+				foodTargets.put(ant, food);
+				executeStoredRoute(ant, foodTargets, null);
+			    }
+			    // no indirect way found either
+			    else
+			    {
+			    }
 			}
 		    }
 
@@ -732,6 +801,7 @@ public class MyBot extends Bot
 	    log.info("and not a single food was found that turn");
 	}
     }
+
     private int getClosestEnemyDistance(Tile antLoc)
     {
 	Set<Tile> enemies = getEnemyAntsInRange(antLoc, game.getAttackRadius2() * 4);
@@ -749,22 +819,6 @@ public class MyBot extends Bot
 	    }
 	    return closestDistance;
 	}
-    }
-
-    /**
-     * Calculates Distance between two tiles. Same as in <code>Ants()</code> but
-     * not squared.
-     * 
-     * @return distance (<code>rowDelta + colDelta</code>)
-     */
-    private int calculateDistance(Tile t1, Tile t2)
-    {
-	int rowDelta = Math.abs(t1.getRow() - t2.getRow());
-	int colDelta = Math.abs(t1.getCol() - t2.getCol());
-	rowDelta = Math.min(rowDelta, game.getRows() - rowDelta);
-	colDelta = Math.min(colDelta, game.getCols() - colDelta);
-
-	return rowDelta + colDelta;
     }
 
     private Set<Tile> getEnemyAntsInRange(Tile antLoc, int range)

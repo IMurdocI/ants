@@ -1,0 +1,34 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>Ant Canvas</title>
+	<script type="text/javascript" src="../../visualizer/js/visualizer.js"></script>
+	<script type="text/javascript">
+		function init() {
+            var options = new Options();
+            options.data_dir = '../../visualizer/data/';
+            options.embedded = true;
+			var visualizer = new Visualizer(document.body, options);
+			visualizer.loadReplayData('{"playernames":[null,null],"error":"Traceback(mostrecentcalllast):
+File\"D:\FHMaster\2.Semester\ModAlg\ants\tools\engine.py\",line115,inrun_game
+game.start_game()
+File\"D:\FHMaster\2.Semester\ModAlg\ants\tools\ants.py\",line1402,instart_game
+self.do_food_visible(self.food_visible*self.num_players)
+File\"D:\FHMaster\2.Semester\ModAlg\ants\tools\ants.py\",line1066,indo_food_visible
+self.food_sets_visible=deque(self.get_symmetric_food_sets(True))
+File\"D:\FHMaster\2.Semester\ModAlg\ants\tools\ants.py\",line1270,inget_symmetric_food_sets
+self.map_symmetry=choice(self.get_map_symmetry())
+File\"D:\FHMaster\2.Semester\ModAlg\ants\tools\ants.py\",line1199,inget_map_symmetry
+.format(len(hills),player,len(player_hills)))
+Exception:(\'Invalidmap\',\'Thismapisnotsymmetric.Player0has3hillswhileplayer1has1hills.\')
+"}');
+		}
+	</script>
+	<style type="text/css">
+		html { margin:0; padding:0; }
+		body { margin:0; padding:0; overflow:hidden; }
+	</style>
+</head>
+<body onload="init()" />
+</html>

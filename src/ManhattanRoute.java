@@ -43,14 +43,32 @@ public class ManhattanRoute extends AbstractRoute
     public boolean findRoute()
     {
 	// TODO make use of teleportation on edges of map
-	int numHor = end.getCol() - start.getCol();
 	int numVert = end.getRow() - start.getRow();
+	int numHor = end.getCol() - start.getCol();
 
 	AimHor = (numHor >= 0) ? Aim.EAST : Aim.WEST;
 	AimVert = (numVert >= 0) ? Aim.SOUTH : Aim.NORTH;
 
-	numHor = Math.abs(numHor);
 	numVert = Math.abs(numVert);
+	numHor = Math.abs(numHor);
+
+	int numHor2 = game.getRows() - numVert;
+	int numVert2 = game.getCols() - numHor;
+
+	if (numHor2 < numHor)
+	{
+	    AimHor = Util.getOppositeDirection(AimHor);
+	    log.info("wrapping horizontal + " + Util.tilePositionsFromToAsString(start, end));
+	}
+
+	if (numVert2 < numVert)
+	{
+	    AimVert = Util.getOppositeDirection(AimVert);
+	    log.info("wrapping vertical + " + Util.tilePositionsFromToAsString(start, end));
+	}
+
+	numVert = Math.min(numVert, game.getRows() - numVert);
+	numHor = Math.min(numHor, game.getCols() - numHor);
 
 	List<Tile> startPath = new LinkedList<Tile>();
 	paths = new LinkedList<List<Tile>>();

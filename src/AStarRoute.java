@@ -334,7 +334,7 @@ public class AStarRoute extends AbstractRoute
 									    // (;;)
 		{
 		    Path path = openList.poll();
-		    log.info("loop # : " + lc);
+		    // log.info("loop # : " + lc);
 		    lc++;
 
 		    if (path == null)

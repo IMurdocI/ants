@@ -9,6 +9,11 @@ public class Util
 	return tile.getRow() + ", " + tile.getCol();
     }
 
+    public static String tilePositionsFromToAsString(Tile tile1, Tile tile2)
+    {
+	return "from " + tilePositionAsString(tile1) + " to " + tilePositionAsString(tile2);
+    }
+
     public static String printPath(Ants game, Tile start, List<Tile> path)
     {
 	String ret = "";
@@ -38,5 +43,22 @@ public class Util
 	}
 
 	return ret;
+    }
+
+    public static Aim getOppositeDirection(Aim direction)
+    {
+	switch (direction)
+	{
+	    case NORTH:
+		return Aim.SOUTH;
+	    case EAST:
+		return Aim.WEST;
+	    case SOUTH:
+		return Aim.NORTH;
+	    case WEST:
+		return Aim.EAST;
+	    default:
+		return Aim.NORTH;
+	}
     }
 }
